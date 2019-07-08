@@ -1,0 +1,15 @@
+{
+  "name": "goal-tracker-elm",
+  "version": "1.0.0",
+  "description": "todo lists + progress bars",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "elm": "elm"
+  },
+  "author": "Michael Claybaugh",
+  "license": "MIT",
+  "dependencies": {
+    "elm": "^0.19.0-no-deps"
+  }
+}
