@@ -1,58 +1,54 @@
 import Browser
-import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Url
 
 -- MAIN
 
-main : Program () Model Msg
 main =
-  Browser.application
+  Browser.document
     { init = init
     , view = view
     , update = update
     , subscriptions = subscriptions
-    , onUrlChange = UrlChanged
-    , onUrlRequest = LinkClicked
     }
 
 
 -- MODEL
 
-type alias Model =
-  { key : Nav.Key
-  , url : Url.Url
-  }
+type TaskStatus = NotStarted | InProgress | Done
+type alias Task =
+    { id : Int
+    , status : TaskStatus
+    , text : String
+    }
+
+type alias Model = List Task
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init flags url key =
-  ( Model key url, Cmd.none )
+init : () -> ( Model, Cmd Msg )
+init _ =
+  ( [], Cmd.none )
 
 
 -- UPDATE
 
 type Msg
-  = LinkClicked Browser.UrlRequest
-  | UrlChanged Url.Url
-
+    = Add Task
+    | Remove Int
+    | ShiftStatus Int
+    | Getjson
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
-    LinkClicked urlRequest ->
-      case urlRequest of
-        Browser.Internal url ->
-          ( model, Nav.pushUrl model.key (Url.toString url) )
-
-        Browser.External href ->
-          ( model, Nav.load href )
-
-    UrlChanged url ->
-      ( { model | url = url }
-      , Cmd.none
-      )
+    Add task ->
+        ( model, Cmd.none )
+    Remove id ->
+        ( model, Cmd.none )
+    ShiftStatus id ->
+        ( model, Cmd.none )
+    Getjson ->
+        ( model, Cmd.none )
 
 
 -- SUBSCRIPTIONS
@@ -66,20 +62,7 @@ subscriptions _ =
 
 view : Model -> Browser.Document Msg
 view model =
-  { title = "URL Interceptor"
+  { title = "Goal Tracker"
   , body =
-      [ text "The current URL is: "
-      , b [] [ text (Url.toString model.url) ]
-      , ul []
-          [ viewLink "/home"
-          , viewLink "/profile"
-          , viewLink "/reviews/the-century-of-the-self"
-          , viewLink "/reviews/public-opinion"
-          , viewLink "/reviews/shah-of-shahs"
-          ]
-      ]
+      [ text "I am here"]
   }
-
-viewLink : String -> Html msg
-viewLink path =
-  li [] [ a [ href path ] [ text path ] ]
