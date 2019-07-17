@@ -83,6 +83,7 @@ view model =
   { title = "Goal Tracker"
   , body =
     [ h1 [] [text "Your Goals"]
+    , p [] [text ("Percent complete: " ++ (percentFromFloat (ratioComplete model)))]
     , listTasks model ]
   }
 
@@ -103,3 +104,12 @@ taskStatusString status =
     NotStarted -> "Not Started"
     InProgress -> "In Progress"
     Done -> "Done!"
+
+percentFromFloat: Float -> String
+percentFromFloat x = (String.fromFloat (x * 100)) ++ "%"
+
+ratioComplete : List Task -> Float
+ratioComplete list = (toFloat (List.length (List.filter isComplete list))) / (toFloat (List.length list))
+
+isComplete : Task -> Bool
+isComplete task = if task.status == Done then True else False
