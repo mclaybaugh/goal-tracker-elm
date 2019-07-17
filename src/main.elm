@@ -1,55 +1,73 @@
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 
 -- MAIN
 
 main =
   Browser.document
-    { init = init
-    , view = view
-    , update = update
-    , subscriptions = subscriptions
-    }
+  { init = init
+  , view = view
+  , update = update
+  , subscriptions = subscriptions
+  }
 
 
 -- MODEL
 
 type TaskStatus = NotStarted | InProgress | Done
 type alias Task =
-    { id : Int
-    , status : TaskStatus
-    , text : String
-    }
+  { id : Int
+  , status : TaskStatus
+  , text : String
+  }
 
 type alias Model = List Task
 
 
 init : () -> ( Model, Cmd Msg )
-init _ =
-  ( [], Cmd.none )
+init _ = ([{ id = 1
+  , status = NotStarted
+  , text = "do the thing"
+  },{ id = 2
+  , status = InProgress
+  , text = "finish work"
+  }], Cmd.none )
 
 
 -- UPDATE
 
 type Msg
-    = Add Task
-    | Remove Int
-    | ShiftStatus Int
-    | Getjson
+  = Add Task
+  | Remove Int
+  | ShiftStatus Int
+  | Getjson
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
     Add task ->
-        ( model, Cmd.none )
+      ( model, Cmd.none )
     Remove id ->
-        ( model, Cmd.none )
+      ( model, Cmd.none )
     ShiftStatus id ->
-        ( model, Cmd.none )
+      ( List.map (modifyById shiftStatus id) model, Cmd.none )
     Getjson ->
-        ( model, Cmd.none )
+      ( model, Cmd.none )
 
+modifyById : (Task -> Task) -> Int -> Task -> Task
+modifyById func id task =
+  if task.id == id
+  then func task
+  else task
+
+shiftStatus : Task -> Task
+shiftStatus task =
+  case task.status of
+    NotStarted -> { task | status = InProgress }
+    InProgress -> { task | status = Done }
+    Done -> { task | status = NotStarted }
 
 -- SUBSCRIPTIONS
 
@@ -64,5 +82,24 @@ view : Model -> Browser.Document Msg
 view model =
   { title = "Goal Tracker"
   , body =
-      [ text "I am here"]
+    [ h1 [] [text "Your Goals"]
+    , listTasks model ]
   }
+
+listTasks : List Task -> Html Msg
+listTasks list =
+  ul [] (List.map taskListItem list)
+
+taskListItem : Task -> Html Msg
+taskListItem task =
+  li []
+  [ button [onClick (ShiftStatus task.id)] [ text "shift status" ]
+  , text (task.text ++ " - " ++ taskStatusString task.status)
+  ]
+
+taskStatusString : TaskStatus -> String
+taskStatusString status =
+  case status of
+    NotStarted -> "Not Started"
+    InProgress -> "In Progress"
+    Done -> "Done!"
