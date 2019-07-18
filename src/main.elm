@@ -23,38 +23,70 @@ type alias Task =
   , text : String
   }
 
-type alias Model = List Task
+type alias Model =
+  { list : List Task
+  , newTask : String
+  , message : String
+  }
 
 
 init : () -> ( Model, Cmd Msg )
-init _ = ([{ id = 1
-  , status = NotStarted
-  , text = "do the thing"
-  },{ id = 2
-  , status = InProgress
-  , text = "finish work"
-  }], Cmd.none )
+init _ =
+  (
+    { list = [{ id = 1, status = NotStarted, text = "do the thing"}
+             ,{ id = 2, status = InProgress, text = "finish work"}
+             ]
+    , newTask = ""
+    , message = ""
+    }
+  , Cmd.none )
 
 
 -- UPDATE
 
 type Msg
-  = Add Task
+  = Add
+  | TextChange String
   | Remove Int
-  | ShiftStatus Int
+  | Shift Int
   | Getjson
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
-    Add task ->
-      ( model, Cmd.none )
+    Add ->
+      if model.newTask == "" then
+        ( { model | message = "Task not created, missing description" } , Cmd.none )
+      else
+        let newId = nextId model.list
+        in
+        ( { model
+          | list = model.list ++ [{ id = newId
+                                  , text = model.newTask
+                                  , status = NotStarted }]
+          , newTask = ""
+          , message = "Task " ++ String.fromInt newId ++ " created."
+          }
+        , Cmd.none
+        )
+    TextChange description ->
+      ( { model | newTask = description }, Cmd.none )
     Remove id ->
       ( model, Cmd.none )
-    ShiftStatus id ->
-      ( List.map (modifyById shiftStatus id) model, Cmd.none )
+    Shift id ->
+      ( {model
+        | list = (List.map (modifyById shiftStatus id) model.list)
+        }
+      , Cmd.none
+      )
     Getjson ->
       ( model, Cmd.none )
+
+nextId : List Task -> Int
+nextId list =
+  case List.maximum (List.map .id list) of
+    Just val -> val + 1
+    Nothing -> 1000
 
 modifyById : (Task -> Task) -> Int -> Task -> Task
 modifyById func id task =
@@ -83,8 +115,11 @@ view model =
   { title = "Goal Tracker"
   , body =
     [ h1 [] [text "Your Goals"]
-    , p [] [text ("Percent complete: " ++ (percentFromFloat (ratioComplete model)))]
-    , listTasks model ]
+    , p [] [text ("Percent complete: " ++ (percentFromFloat (ratioComplete model.list)))]
+    , listTasks model.list
+    , input [value model.newTask, onInput TextChange] [], label [] [text "task description"], button [onClick Add] [text "Add"]
+    , p [] [text model.message]
+    ]
   }
 
 listTasks : List Task -> Html Msg
@@ -94,7 +129,7 @@ listTasks list =
 taskListItem : Task -> Html Msg
 taskListItem task =
   li []
-  [ button [onClick (ShiftStatus task.id)] [ text "shift status" ]
+  [ button [onClick (Shift task.id)] [ text "shift status" ]
   , text (task.text ++ " - " ++ taskStatusString task.status)
   ]
 
@@ -106,7 +141,7 @@ taskStatusString status =
     Done -> "Done!"
 
 percentFromFloat: Float -> String
-percentFromFloat x = (String.fromFloat (x * 100)) ++ "%"
+percentFromFloat x = (String.fromInt (round (x * 100))) ++ "%"
 
 ratioComplete : List Task -> Float
 ratioComplete list = (toFloat (List.length (List.filter isComplete list))) / (toFloat (List.length list))
