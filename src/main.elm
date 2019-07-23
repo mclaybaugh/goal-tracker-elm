@@ -48,7 +48,7 @@ type Msg
   = Add
   | TextChange String
   | Remove Int
-  | Shift Int
+  | SetStatus TaskStatus
   | Getjson
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -72,15 +72,17 @@ update msg model =
     TextChange description ->
       ( { model | newTask = description }, Cmd.none )
     Remove id ->
-      ( model, Cmd.none )
-    Shift id ->
-      ( {model
-        | list = (List.map (modifyById shiftStatus id) model.list)
-        }
+      ( { model | list = removeTask id model.list }, Cmd.none )
+    SetStatus status ->
+      ( model
+      {-{model | list = (List.map (modifyById shiftStatus id) model.list)}-}
       , Cmd.none
       )
     Getjson ->
       ( model, Cmd.none )
+
+removeTask : Int -> List Task -> List Task
+removeTask id list = List.filter (\t -> id /= t.id) list
 
 nextId : List Task -> Int
 nextId list =
@@ -100,6 +102,10 @@ shiftStatus task =
     NotStarted -> { task | status = InProgress }
     InProgress -> { task | status = Done }
     Done -> { task | status = NotStarted }
+
+setStatus : TaskStatus -> Task -> Task
+setStatus status task =
+  { task | status = status }
 
 -- SUBSCRIPTIONS
 
@@ -129,8 +135,8 @@ listTasks list =
 taskListItem : Task -> Html Msg
 taskListItem task =
   li []
-  [ button [onClick (Shift task.id)] [ text "shift status" ]
-  , text (task.text ++ " - " ++ taskStatusString task.status)
+  [ text (task.text ++ " - " ++ taskStatusString task.status)
+  , button [onClick (Remove task.id)] [text "Delete"]
   ]
 
 taskStatusString : TaskStatus -> String
@@ -144,7 +150,10 @@ percentFromFloat: Float -> String
 percentFromFloat x = (String.fromInt (round (x * 100))) ++ "%"
 
 ratioComplete : List Task -> Float
-ratioComplete list = (toFloat (List.length (List.filter isComplete list))) / (toFloat (List.length list))
+ratioComplete list =
+  case list of
+    [] -> 1
+    _ -> (toFloat (List.length (List.filter isComplete list))) / (toFloat (List.length list))
 
 isComplete : Task -> Bool
 isComplete task = if task.status == Done then True else False
