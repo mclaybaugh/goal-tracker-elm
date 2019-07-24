@@ -48,7 +48,7 @@ type Msg
   = Add
   | TextChange String
   | Remove Int
-  | SetStatus TaskStatus
+  | SetStatus Int TaskStatus
   | Getjson
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -73,9 +73,8 @@ update msg model =
       ( { model | newTask = description }, Cmd.none )
     Remove id ->
       ( { model | list = removeTask id model.list }, Cmd.none )
-    SetStatus status ->
-      ( model
-      {-{model | list = (List.map (modifyById shiftStatus id) model.list)}-}
+    SetStatus id status ->
+      ( { model | list = List.map (modifyById (setStatus status) id) model.list }
       , Cmd.none
       )
     Getjson ->
@@ -96,13 +95,6 @@ modifyById func id task =
   then func task
   else task
 
-shiftStatus : Task -> Task
-shiftStatus task =
-  case task.status of
-    NotStarted -> { task | status = InProgress }
-    InProgress -> { task | status = Done }
-    Done -> { task | status = NotStarted }
-
 setStatus : TaskStatus -> Task -> Task
 setStatus status task =
   { task | status = status }
@@ -120,40 +112,46 @@ view : Model -> Browser.Document Msg
 view model =
   { title = "Goal Tracker"
   , body =
-    [ h1 [] [text "Your Goals"]
-    , p [] [text ("Percent complete: " ++ (percentFromFloat (ratioComplete model.list)))]
-    , listTasks model.list
+    [ h1 [] [text "Goals"]
+    , p [] [text <| "Percent complete: " ++ (percentFromFloat <| ratioComplete model.list)]
+    , ol [] (List.map taskListItem model.list)
     , input [value model.newTask, onInput TextChange] [], label [] [text "task description"], button [onClick Add] [text "Add"]
     , p [] [text model.message]
     ]
   }
 
-listTasks : List Task -> Html Msg
-listTasks list =
-  ul [] (List.map taskListItem list)
-
 taskListItem : Task -> Html Msg
 taskListItem task =
   li []
-  [ text (task.text ++ " - " ++ taskStatusString task.status)
-  , button [onClick (Remove task.id)] [text "Delete"]
+  [ fieldset [] <| List.map (statusRadio task.status task.id) [NotStarted, InProgress, Done]
+  , text task.text
+  , button [onClick <| Remove task.id ] [text "Delete"]
   ]
+
+statusRadio : TaskStatus -> Int -> TaskStatus -> Html Msg
+statusRadio taskStatus id status =
+  label []
+    [ input [ type_ "radio"
+            , name <| "status" ++ (String.fromInt id)
+            , checked (taskStatus == status)
+            , onInput (\n -> SetStatus id status)
+            ] []
+    , text <| taskStatusString status
+    ]
 
 taskStatusString : TaskStatus -> String
 taskStatusString status =
   case status of
     NotStarted -> "Not Started"
     InProgress -> "In Progress"
-    Done -> "Done!"
+    Done -> "Done"
 
 percentFromFloat: Float -> String
-percentFromFloat x = (String.fromInt (round (x * 100))) ++ "%"
+percentFromFloat x =
+  (x * 100 |> round |> String.fromInt) ++ "%"
 
 ratioComplete : List Task -> Float
 ratioComplete list =
   case list of
     [] -> 1
-    _ -> (toFloat (List.length (List.filter isComplete list))) / (toFloat (List.length list))
-
-isComplete : Task -> Bool
-isComplete task = if task.status == Done then True else False
+    _ -> (List.filter (\n -> n.status == Done) list |> List.length |> toFloat) / (List.length list |> toFloat)
