@@ -115,7 +115,9 @@ view model =
     [ h1 [] [text "Goals"]
     , p [] [text <| "Percent complete: " ++ (percentFromFloat <| ratioComplete model.list)]
     , ol [] (List.map taskListItem model.list)
-    , input [value model.newTask, onInput TextChange] [], label [] [text "task description"], button [onClick Add] [text "Add"]
+    , input [value model.newTask, onInput TextChange] []
+    , label [] [text "task description"]
+    , button [onClick Add] [text "Add"]
     , p [] [text model.message]
     ]
   }
@@ -131,11 +133,12 @@ taskListItem task =
 statusRadio : TaskStatus -> Int -> TaskStatus -> Html Msg
 statusRadio taskStatus id status =
   label []
-    [ input [ type_ "radio"
-            , name <| "status" ++ (String.fromInt id)
-            , checked (taskStatus == status)
-            , onInput (\n -> SetStatus id status)
-            ] []
+    [ input
+      [ type_ "radio"
+      , name <| "status" ++ (String.fromInt id)
+      , checked (taskStatus == status)
+      , onInput (\n -> SetStatus id status)
+      ] []
     , text <| taskStatusString status
     ]
 
@@ -154,4 +157,6 @@ ratioComplete : List Task -> Float
 ratioComplete list =
   case list of
     [] -> 1
-    _ -> (List.filter (\n -> n.status == Done) list |> List.length |> toFloat) / (List.length list |> toFloat)
+    _ ->
+      (List.filter (\n -> n.status == Done) list 
+        |> List.length |> toFloat) / (List.length list |> toFloat)
