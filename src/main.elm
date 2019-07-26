@@ -1,14 +1,20 @@
 import Browser
+{-
 import Html exposing (..)
-import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Html.Attributes exposing (..)
+-}
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (..)
+import Html.Styled.Events exposing (..)
+import Css exposing (..)
 
 -- MAIN
 
 main =
-  Browser.document
+  Browser.element
   { init = init
-  , view = view
+  , view = view >> toUnstyled
   , update = update
   , subscriptions = subscriptions
   }
@@ -108,10 +114,9 @@ subscriptions _ =
 
 -- VIEW
 
-view : Model -> Browser.Document Msg
+view : Model -> Html Msg
 view model =
-  { title = "Goal Tracker"
-  , body =
+  div []
     [ h1 [] [text "Goals"]
     , p [] [text <| "Percent complete: " ++ (percentFromFloat <| ratioComplete model.list)]
     , ol [] (List.map taskListItem model.list)
@@ -120,15 +125,16 @@ view model =
     , button [onClick Add] [text "Add"]
     , p [] [text model.message]
     ]
-  }
 
 taskListItem : Task -> Html Msg
 taskListItem task =
   li []
-  [ fieldset [] <| List.map (statusRadio task.status task.id) [NotStarted, InProgress, Done]
-  , text task.text
-  , button [onClick <| Remove task.id ] [text "Delete"]
-  ]
+    [ fieldset [css
+        [border zero]
+      ] <| List.map (statusRadio task.status task.id) [NotStarted, InProgress, Done]
+    , text task.text
+    , button [onClick <| Remove task.id ] [text "Delete"]
+    ]
 
 statusRadio : TaskStatus -> Int -> TaskStatus -> Html Msg
 statusRadio taskStatus id status =
@@ -136,7 +142,7 @@ statusRadio taskStatus id status =
     [ input
       [ type_ "radio"
       , name <| "status" ++ (String.fromInt id)
-      , checked (taskStatus == status)
+      , Html.Styled.Attributes.checked (taskStatus == status)
       , onInput (\n -> SetStatus id status)
       ] []
     , text <| taskStatusString status
@@ -151,12 +157,12 @@ taskStatusString status =
 
 percentFromFloat: Float -> String
 percentFromFloat x =
-  (x * 100 |> round |> String.fromInt) ++ "%"
+  (x * 100 |> Basics.round |> String.fromInt) ++ "%"
 
 ratioComplete : List Task -> Float
 ratioComplete list =
   case list of
     [] -> 1
     _ ->
-      (List.filter (\n -> n.status == Done) list 
+      (List.filter (\n -> n.status == Done) list
         |> List.length |> toFloat) / (List.length list |> toFloat)
